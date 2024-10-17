@@ -134,7 +134,44 @@ function _search(graph::T, start::MyGraphNodeModel, algorithm::ModifiedBellmanFo
     number_of_nodes = length(nodes);
     
     # TODO: implement this function
-    throw("ModifiedBellmanFordAlgorithm not implemented");
+   # Initialize distances and previous
+   for (id, _) in nodes
+    distances[id] = id == start.id ? 0.0 : Inf
+    previous[id] = nothing
+end
+
+# Initialize node usage counters
+node_usage = Dict(id => 0 for (id, _) in nodes)
+
+# Main loop - run |V| - 1 times
+for _ in 1:(number_of_nodes - 1)
+    for (u, v) in keys(graph.edges)
+        # Check node capacities
+        u_capacity = nodes[u].capacity !== nothing ? nodes[u].capacity[2] : Inf
+        v_capacity = nodes[v].capacity !== nothing ? nodes[v].capacity[1] : Inf
+        
+        if node_usage[u] < u_capacity && node_usage[v] < v_capacity
+            alt = distances[u] + weight(graph, u, v)
+            if alt < distances[v]
+                if previous[v] !== nothing
+                    node_usage[previous[v]] -= 1  # Decrease usage of old previous node
+                end
+                distances[v] = alt
+                previous[v] = u
+                node_usage[u] += 1  # Increase usage of new previous node
+                node_usage[v] += 1
+            end
+        end
+    end
+end
+
+# Check for negative cycles
+for (u, v) in keys(graph.edges)
+    if distances[u] + weight(graph, u, v) < distances[v]
+        throw(ArgumentError("The graph contains a negative cycle"))
+    end
+end
+
 
     # return -
     return distances, previous;
